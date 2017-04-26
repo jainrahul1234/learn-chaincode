@@ -19,10 +19,18 @@ package main
 import (
 	"errors"
 	"fmt"
-
+  "encoding/json"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
+//custom data models
+type PackageInfo struct {
+//    PackageID string `json:"id"`
+    Shipper   string `json:"shipper"`
+    Consignee string `json:"consignee"`
+    Temprature string `json:"temprature"`
+    PackageDes string `json:"packagedes"`
+}
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
 }
@@ -36,11 +44,26 @@ func main() {
 
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	if len(args) != 1 {
+	if len(args) != 4 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 
-	err := stub.PutState("hello_world", []byte(args[0]))
+	var packageinfo PackageInfo
+	//packageinfo = PackageInfo{"UPS","RAHUL",2,"ANTIBIOTICS"}
+
+
+  packageinfo.Shipper = args[0]
+  packageinfo.Consignee  = args[1]
+	packageinfo.Temprature = args[2]
+	packageinfo.PackageDes = args[3]
+
+	bytes, err := json.Marshal(&packageinfo)
+	if err != nil {
+	        fmt.Println("Could not marshal personal info object", err)
+	        return nil, err
+	 }
+
+	err = stub.PutState("1Z20170426", bytes)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +80,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.Init(stub, "init", args)
 	} else if function == "write" {
 		return t.write(stub, args)
+	} else if function == "create" {
+		return t.create(stub,args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
@@ -101,7 +126,9 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 	var err error
 
 	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
+		jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting name of the key to query " + key + "\"}"
+		//return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
+		return nil, errors.New(jsonResp)
 	}
 
 	key = args[0]
@@ -111,5 +138,46 @@ func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) 
 		return nil, errors.New(jsonResp)
 	}
 
+	var packageinfo PackageInfo
+	err = json.Unmarshal(valAsbytes, &packageinfo)
+	if err != nil {
+        fmt.Println("Could not marshal personal info object", err)
+        return nil, err
+ }
+
+	fmt.Println(packageinfo.Shipper)
 	return valAsbytes, nil
+	//  return packageinfo, nil
+}
+
+// create - invoke function to create new asset using given key/value pair
+func (t *SimpleChaincode) create(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	var key string
+	var err error
+	fmt.Println("running create()")
+
+	if len(args) != 5 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 5. name of the key and value to set")
+	}
+
+	var packageinfo PackageInfo
+
+	key = args[0]
+	packageinfo.Shipper = args[1]
+	packageinfo.Consignee  = args[2]
+	packageinfo.Temprature = args[3]
+	packageinfo.PackageDes = args[4]
+
+	bytes, err := json.Marshal(&packageinfo)
+	if err != nil {
+					fmt.Println("Could not marshal personal info object", err)
+					return nil, err
+	 }
+
+	err = stub.PutState(key, bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
