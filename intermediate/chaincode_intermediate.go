@@ -84,6 +84,8 @@ if function == "init" {
   return t.updatetemp(stub, args)
 } else if function == "create" {
   return t.create(stub,args)
+} else if function == "deliverpkg"{
+  return t.deliverpkg(stub,args)
 }
 fmt.Println("invoke did not find func: " + function)
 
@@ -197,7 +199,9 @@ if len(args) != 2 {
     }
 
   // check wheather the pkg temprature is in acceptable range
-
+  if packageinfo.Temprature > "5" {
+    return nil, errors.New("Temprature thershold crossed - Package in Invalid state")
+  }
   packageinfo.Owner = args[1]
 
   bytes, err := json.Marshal(&packageinfo)
