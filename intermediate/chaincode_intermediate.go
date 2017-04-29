@@ -270,9 +270,7 @@ fmt.Println("query is running " + function)
 // Handle different functions
 if function == "read" { //read a variable
   return t.read(stub, args)
-} else if function == "gethistory"{
-  return t.gethistory(stub,args)
-}
+} 
 fmt.Println("query did not find func: " + function)
 
 return nil, errors.New("Received unknown function query: " + function)
@@ -323,55 +321,4 @@ return valAsbytes, nil
 //  return packageinfo, nil
 }
 
-// gethistory - query function to read key/value pair
-func (t *SimpleChaincode) gethistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-type AuditHistory struct {
-		TxId    string   `json:"txId"`
-		Value   PackageInfo   `json:"value"`
-}
-var history []AuditHistory;
-var packageinfo PackageInfo
 
-var key, jsonResp string
-var err error
-key = args[0]
-
-if len(args) != 1 {
-  jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting PkgID to query " + key + "\"}"
-  //return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
-  return nil, errors.New(jsonResp)
-}
-
-// Get History
-resultsIterator, err := stub.GetHistoryForKey(key)
-if err != nil {
-  return nil, errors.New("Invalid PkgId has been Passed")
-}
-defer resultsIterator.Close()
-
-for resultsIterator.HasNext() {
-  txID, historicValue, err := resultsIterator.Next()
-  if err != nil {
-    return nil, errors.New("gethistory failed")
-  }
-
-  var tx AuditHistory
-  tx.TxId = txID                             //copy transaction id over
-  json.Unmarshal(historicValue, &packageinfo)     //un stringify it aka JSON.parse()
-  if historicValue == nil {                  //marble has been deleted
-    var emptyPkg PackageInfo
-    tx.Value = emptyPkg                 //copy nil marble
-  } else {
-    json.Unmarshal(historicValue, &packageinfo) //un stringify it aka JSON.parse()
-    tx.Value = packageinfo                      //copy marble over
-  }
-  history = append(history, tx)              //add this tx to the list
-}
-fmt.Printf("- getHistoryFor Package returning:\n%s", history)
-
-//change to array of bytes
-historyAsBytes, _ := json.Marshal(history)     //convert to array of bytes
-return historyAsBytes, nil
-
-
-}
