@@ -194,6 +194,11 @@ if err != nil {
     return nil, errors.New("2nd argument must be a numeric string")
 	}
 
+packageinfo.PkgStatus = "In-Valid"
+if packageinfo.Temprature < 5 && packageinfo.Temprature > -5 {
+    packageinfo.PkgStatus = "Valid"
+  }
+	
 bytes, err := json.Marshal(&packageinfo)
 if err != nil {
         fmt.Println("Could not marshal personal info object", err)
