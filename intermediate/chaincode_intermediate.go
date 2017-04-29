@@ -114,7 +114,7 @@ fmt.Println("running create()")
 var key string
 var err error
 
-if len(args) != 6 {
+if len(args) != 7 {
   return nil, errors.New("Incorrect number of arguments. Expecting 7 in order of PkgID, Shipper, Insurer, Consignee, Temprature, PackageDes, Owner")
   }
 
