@@ -181,7 +181,7 @@ if err != nil {
   }
 // validate pkd exist or not by checking temprature
 if packageinfo.PkgId != key{
-  jsonResp = "{\"Error\":\"Invalid PackageId Passed"}"
+  jsonResp = "{\"Error\":\"Invalid PackageId Passed\"}"
   return nil, errors.New(jsonResp)
   }
 
@@ -193,7 +193,7 @@ if packageinfo.PkgStatus != "Valid" {
 
 packageinfo.Temprature, err = strconv.Atoi(args[1])
 if err != nil {
-	jsonResp = "{\"Error\":\"2nd argument must be a numeric string"}"
+	jsonResp = "{\"Error\":\"2nd argument must be a numeric string\"}"
   	return nil, errors.New(jsonResp)
 	}
 
