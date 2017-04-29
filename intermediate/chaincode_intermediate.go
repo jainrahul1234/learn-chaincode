@@ -187,7 +187,7 @@ if packageinfo.PkgId != key{
 
 // check wheather the pkg temprature is in acceptable range and package in in valid status
 if packageinfo.PkgStatus != "Valid" {
-  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package in Invalid state"}"
+  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package in Invalid state\"}"
   return nil, errors.New(jsonResp)
   }
 
@@ -224,7 +224,7 @@ var key , jsonResp string
 var err error
 
 if len(args) != 2 {
-	jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 2 : PkgId and New Owner\"}"
+	jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 2 : PkgId and New Owner" "\"}"
   	return nil, errors.New(jsonResp)
   }
 
@@ -246,13 +246,13 @@ if len(args) != 2 {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-    jsonResp = "{\"Error\":\"Invalid PackageId Passed\"}"
+    jsonResp = "{\"Error\":\"Invalid PackageId Passed" "\"}"
     return nil, errors.New(jsonResp)
     }
 
   // check wheather the pkg temprature is in acceptable range and package in in valid status
   if packageinfo.PkgStatus != "Valid" {
-	  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package in Invalid state\"}"
+	  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package in Invalid state" "\"}"
           return nil, errors.New(jsonResp)
     }
 
@@ -316,7 +316,7 @@ if err != nil {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-	  jsonResp = "{\"Error\":\Invalid PackageId Passed\"}"
+	  jsonResp = "{\"Error\":\Invalid PackageId Passed" "\"}"
           return nil, errors.New(jsonResp)
     }
 
