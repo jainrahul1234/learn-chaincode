@@ -201,7 +201,7 @@ packageinfo.PkgStatus = "In-Valid"
 if packageinfo.Temprature < 5 && packageinfo.Temprature > -5 {
     packageinfo.PkgStatus = "Valid"
   }
-	
+
 bytes, err := json.Marshal(&packageinfo)
 if err != nil {
         fmt.Println("Could not marshal personal info object", err)
@@ -224,7 +224,7 @@ var key , jsonResp string
 var err error
 
 if len(args) != 2 {
-	jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 2 : PkgId and New Owner" "\"}"
+	jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 2 : PkgId and New Owner\"}"
   	return nil, errors.New(jsonResp)
   }
 
@@ -246,13 +246,13 @@ if len(args) != 2 {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-    jsonResp = "{\"Error\":\"Invalid PackageId Passed" "\"}"
+    jsonResp = "{\"Error\":\"Invalid PackageId Passed\"}"
     return nil, errors.New(jsonResp)
     }
 
   // check wheather the pkg temprature is in acceptable range and package in in valid status
   if packageinfo.PkgStatus != "Valid" {
-	  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package in Invalid state" "\"}"
+	  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package in Invalid state\"}"
           return nil, errors.New(jsonResp)
     }
 
@@ -281,7 +281,7 @@ fmt.Println("query is running " + function)
 // Handle different functions
 if function == "read" { //read a variable
   return t.read(stub, args)
-} 
+}
 fmt.Println("query did not find func: " + function)
 
 return nil, errors.New("Received unknown function query: " + function)
@@ -316,7 +316,7 @@ if err != nil {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-	  jsonResp = "{\"Error\":\Invalid PackageId Passed" "\"}"
+	  jsonResp = "{\"Error\":\"Invalid PackageId Passed \"}"
           return nil, errors.New(jsonResp)
     }
 
@@ -332,5 +332,3 @@ fmt.Println(packageinfo.PkgStatus)
 return valAsbytes, nil
 //  return packageinfo, nil
 }
-
-
