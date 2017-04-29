@@ -181,17 +181,20 @@ if err != nil {
   }
 // validate pkd exist or not by checking temprature
 if packageinfo.PkgId != key{
-  return nil, errors.New("Invalid PackageId Passed")
+  jsonResp = "{\"Error\":\"Invalid PackageId Passed"}"
+  return nil, errors.New(jsonResp)
   }
 
 // check wheather the pkg temprature is in acceptable range and package in in valid status
 if packageinfo.PkgStatus != "Valid" {
-    return nil, errors.New("Temprature thershold crossed - Package in Invalid state")
+  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package in Invalid state"}"
+  return nil, errors.New(jsonResp)
   }
 
 packageinfo.Temprature, err = strconv.Atoi(args[1])
 if err != nil {
-    return nil, errors.New("2nd argument must be a numeric string")
+	jsonResp = "{\"Error\":\"2nd argument must be a numeric string"}"
+  	return nil, errors.New(jsonResp)
 	}
 
 packageinfo.PkgStatus = "In-Valid"
@@ -221,7 +224,8 @@ var key , jsonResp string
 var err error
 
 if len(args) != 2 {
-  return nil, errors.New("Incorrect number of arguments. Expecting 2. PkgId and New Owner")
+	jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 2 : PkgId and New Owner\"}"
+  	return nil, errors.New(jsonResp)
   }
 
   key = args[0]
@@ -242,12 +246,14 @@ if len(args) != 2 {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-    return nil, errors.New("Invalid PackageId Passed")
+    jsonResp = "{\"Error\":\"Invalid PackageId Passed\"}"
+    return nil, errors.New(jsonResp)
     }
 
   // check wheather the pkg temprature is in acceptable range and package in in valid status
   if packageinfo.PkgStatus != "Valid" {
-      return nil, errors.New("Temprature thershold crossed - Package in Invalid state")
+	  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package in Invalid state\"}"
+          return nil, errors.New(jsonResp)
     }
 
   packageinfo.Owner = args[1]
@@ -310,7 +316,8 @@ if err != nil {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-    return nil, errors.New("Invalid PackageId Passed")
+	  jsonResp = "{\"Error\":\Invalid PackageId Passed\"}"
+          return nil, errors.New(jsonResp)
     }
 
 fmt.Println(packageinfo.PkgId)
