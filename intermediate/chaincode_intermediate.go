@@ -310,6 +310,7 @@ if len(args) != 1 {
   return nil, errors.New(jsonResp)
 }
 
+fmt.Println("before getstate")
 valAsbytes, err := stub.GetState(key)
 if err != nil {
   jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
@@ -317,6 +318,7 @@ if err != nil {
 }
 
 var packageinfo PackageInfo
+fmt.Println("before unmarshall")
 err = json.Unmarshal(valAsbytes, &packageinfo)
 if err != nil {
       fmt.Println("Could not marshal personal info object", err)
@@ -325,6 +327,7 @@ if err != nil {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
+	  fmt.Println("Invalid PackageId Passed")
 	  jsonResp = "{\"Error\":\"Invalid PackageId Passed" + key + "\"}"
           return nil, errors.New(jsonResp)
     }
