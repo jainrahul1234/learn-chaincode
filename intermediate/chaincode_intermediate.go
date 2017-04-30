@@ -22,6 +22,7 @@ import (
 "fmt"
 "encoding/json"
 "github.com/hyperledger/fabric/core/chaincode/shim"
+//"github.com/hyperledger/fabric/peer/chaincode"
 "strconv"
 //"github.com/hyperledger/fabric/protos/peer"
 )
@@ -51,8 +52,12 @@ if err != nil {
 
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
+var jsonResp string
+
 if len(args) != 6 {
-  return nil, errors.New("Incorrect number of arguments. Expecting 6 in order of Shipper, Insurer, Consignee, Temprature, PackageDes, Owner ")
+  jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 6 in order of Shipper, Insurer, Consignee, Temprature, PackageDes, Owner\"}"
+  return nil, errors.New(jsonResp)
   }
 
 var packageinfo PackageInfo
@@ -64,7 +69,8 @@ packageinfo.Insurer  = args[1]
 packageinfo.Consignee  = args[2]
 packageinfo.Temprature, err = strconv.Atoi(args[3])
 if err != nil {
-    return nil, errors.New("2nd argument must be a numeric string")
+  jsonResp = "{\"Error\":\"3rd argument must be a numeric string\"}"
+  return nil, errors.New(jsonResp)
 	}
 packageinfo.PackageDes = args[4]
 packageinfo.Owner = args[5]
@@ -111,11 +117,12 @@ return nil, errors.New("Received unknown function invocation: " + function)
 func (t *SimpleChaincode) create(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 fmt.Println("running create()")
 
-var key string
+var key, jsonResp string
 var err error
 
 if len(args) != 7 {
-  return nil, errors.New("Incorrect number of arguments. Expecting 7 in order of PkgID, Shipper, Insurer, Consignee, Temprature, PackageDes, Owner")
+  jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 7 in order of PkgID, Shipper, Insurer, Consignee, Temprature, PackageDes, Owner\"}"
+  return nil, errors.New(jsonResp)
   }
 
 var packageinfo PackageInfo
@@ -128,7 +135,8 @@ packageinfo.Insurer = args[2]
 packageinfo.Consignee  = args[3]
 packageinfo.Temprature, err = strconv.Atoi(args[4])
 if err != nil {
-    return nil, errors.New("5th argument must be a numeric string")
+  jsonResp = "{\"Error\":\"5th argument must be a numeric string\"}"
+  return nil, errors.New(jsonResp)
 	}
 packageinfo.PackageDes = args[5]
 packageinfo.Owner = args[6]
@@ -160,7 +168,8 @@ var err error
 fmt.Println("running updatetemp()")
 
 if len(args) != 2 {
-  return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the key and temprature value to set")
+  jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 2. name of the key and temprature value to set\"}"
+  return nil, errors.New(jsonResp)
   }
 
 
