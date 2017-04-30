@@ -325,7 +325,7 @@ if err != nil {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-	  jsonResp = "{\"Error\":\"Invalid PackageId Passed \"}"
+	  jsonResp = "{\"Error\":\"Invalid PackageId Passed "\"}"
           return nil, errors.New(jsonResp)
     }
 
