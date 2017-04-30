@@ -317,12 +317,18 @@ if err != nil {
   return nil, errors.New(jsonResp)
 }
 
+if valAsbytes == nil {
+  jsonResp = "{\"Error\":\"Invalid PackageId Passed" + key + "\"}"
+  return nil, errors.New(jsonResp)
+
+  }
 var packageinfo PackageInfo
 fmt.Println("before unmarshall")
 err = json.Unmarshal(valAsbytes, &packageinfo)
 if err != nil {
       fmt.Println("Could not marshal personal info object", err)
-      return nil, err
+      jsonResp = "{\"Error\":\"Could not marshal personal info object" + key + "\"}"
+      return nil, errors.New(jsonResp)
 }
 
 // validate pkd exist or not by checking temprature
