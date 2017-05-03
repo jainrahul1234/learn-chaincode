@@ -432,7 +432,7 @@ if function == "querypkgbyid" {
   } else if function == "querybyrole"{
   return t.querybyrole(stub, args)
   } else if function == "querybyrole_status"{
-  return t.querybyrole(stub, args)
+  return t.querybyrole_status(stub, args)
   }
 
 fmt.Println("query did not find func: " + function)
