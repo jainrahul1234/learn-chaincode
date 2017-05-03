@@ -391,7 +391,7 @@ if err != nil {
 	}
 
 
-if temprature_reading > packageinfo.TempratureMax  || temprature_reading > packageinfo.TempratureMin  {
+if temprature_reading > packageinfo.TempratureMax  || temprature_reading < packageinfo.TempratureMin  {
     packageinfo.PkgStatus = "Pkg_Damaged"
   }
 
