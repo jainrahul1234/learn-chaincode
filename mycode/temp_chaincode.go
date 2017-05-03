@@ -138,6 +138,8 @@ fmt.Println("invoke is running " + function)
 // Handle different functions
 if function == "create" {
   return t.create(stub,args)
+  } else if function == "acceptpkg"{
+  return t.acceptpkg(stub,args)
   } else if function == "deliverpkg"{
   return t.deliverpkg(stub,args)
   } else if function == "updatetemp" {
@@ -218,6 +220,66 @@ if err != nil {
 
 return nil, nil
 }
+
+//=================================================================================================================================
+//	acceptpkg - Accept Package from Shipper , change owner & status
+//=================================================================================================================================
+func (t *SimpleChaincode) acceptpkg(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+fmt.Println("running acceptpkg()")
+var key , jsonResp string
+var err error
+
+if len(args) != 2 {
+	jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 1 : PkgId and New Owner\"}"
+  	return nil, errors.New(jsonResp)
+  }
+
+  key = args[0]
+  var packageinfo PackageInfo
+
+  valAsbytes, err := stub.GetState(key)
+
+  if err != nil {
+    jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
+    return nil, errors.New(jsonResp)
+    }
+
+  err = json.Unmarshal(valAsbytes, &packageinfo)
+  if err != nil {
+        fmt.Println("Could not marshal personal info object", err)
+        return nil, err
+    }
+
+// validate pkd exist or not by checking temprature
+  if packageinfo.PkgId != key{
+    jsonResp = "{\"Error\":\"Invalid PackageId Passed\"}"
+    return nil, errors.New(jsonResp)
+    }
+
+  // check wheather the pkg temprature is in acceptable range and package in in valid status
+  if packageinfo.PkgStatus == "Pkg_Damaged" {    // Pkg_Damaged
+	  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package Damaged\"}"
+          return nil, errors.New(jsonResp)
+    }
+
+  packageinfo.Owner = args[1]
+  packageinfo.PkgStatus = "In_Transit"
+
+  bytes, err := json.Marshal(&packageinfo)
+  if err != nil {
+          fmt.Println("Could not marshal personal info object", err)
+          return nil, err
+    }
+
+  err = stub.PutState(key, bytes)
+  if err != nil {
+    return nil, err
+    }
+
+  return nil, nil
+}
+
+
 
 //=================================================================================================================================
 //	deliverpkg - deliver package to cosignee, change owner of package
@@ -367,7 +429,11 @@ if function == "querypkgbyid" {
   return t.querypkgbyowner(stub, args)
   } else if function == "querybypkgstatus"  {
   return t.querybypkgstatus(stub, args)
-}
+  } else if function == "querybyrole"{
+  return t.querybyrole(stub, args)
+  } else if function == "querybyrole_status"{
+  return t.querybyrole(stub, args)
+  }
 
 fmt.Println("query did not find func: " + function)
 return nil, errors.New("Received unknown function query: " + function)
@@ -513,15 +579,134 @@ func (t *SimpleChaincode) queryallpkg(stub shim.ChaincodeStubInterface, args []s
 //=================================================================================================================================
 func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
-return nil, nil
+
+    var jsonResp string
+    var err error
+
+    if len(args) != 1 {
+        jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass Shipper\"}"
+        return nil, errors.New(jsonResp)
+        }
+
+    valAsbytes, err := stub.GetState("PkgIdsKey")
+    if err != nil {
+        jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+        return nil, errors.New(jsonResp)
+        }
+
+    var package_holder PKG_Holder
+    err = json.Unmarshal(valAsbytes, &package_holder)
+    if err != nil {
+              fmt.Println("Could not marshal personal info object", err)
+              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              return nil, errors.New(jsonResp)
+        }
+
+    var pkginfo PackageInfo
+
+    result := "["
+
+    var temp []byte
+
+    for _, PkgId := range package_holder.PkgIds  {
+
+      pkginfoasbytes, err := stub.GetState(PkgId)
+      if err != nil {
+        jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+        return nil, errors.New(jsonResp)
+      }
+
+      err = json.Unmarshal(pkginfoasbytes, &pkginfo);
+      if err != nil {
+                fmt.Println("Could not marshal personal info object", err)
+                jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+                return nil, errors.New(jsonResp)
+      }
+
+  // check for inout owner
+      if pkginfo.Shipper == args[0] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+      }
+
+    }
+
+    if len(result) == 1 {
+      result = "[]"
+    } else {
+      result = result[:len(result)-1] + "]"
+    }
+
+    return []byte(result), nil
+
 }
+
 //=================================================================================================================================
 //	querypkgbyowner - query function to read key/value pair by owner of package
 //=================================================================================================================================
 func (t *SimpleChaincode) querypkgbyowner(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
-return nil, nil
+  var jsonResp string
+  var err error
+
+  if len(args) != 1 {
+      jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass Owner\"}"
+      return nil, errors.New(jsonResp)
+      }
+
+  valAsbytes, err := stub.GetState("PkgIdsKey")
+  if err != nil {
+      jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+      return nil, errors.New(jsonResp)
+      }
+
+  var package_holder PKG_Holder
+  err = json.Unmarshal(valAsbytes, &package_holder)
+  if err != nil {
+            fmt.Println("Could not marshal personal info object", err)
+            jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+            return nil, errors.New(jsonResp)
+      }
+
+  var pkginfo PackageInfo
+
+  result := "["
+
+  var temp []byte
+
+  for _, PkgId := range package_holder.PkgIds  {
+
+    pkginfoasbytes, err := stub.GetState(PkgId)
+    if err != nil {
+      jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+      return nil, errors.New(jsonResp)
+    }
+
+    err = json.Unmarshal(pkginfoasbytes, &pkginfo);
+    if err != nil {
+              fmt.Println("Could not marshal personal info object", err)
+              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              return nil, errors.New(jsonResp)
+    }
+
+// check for inout owner
+    if pkginfo.Owner == args[0] {
+      temp = pkginfoasbytes
+      result += string(temp) + ","
+    }
+
+  }
+
+  if len(result) == 1 {
+    result = "[]"
+  } else {
+    result = result[:len(result)-1] + "]"
+  }
+
+  return []byte(result), nil
+
 }
+
 //=================================================================================================================================
 //	querybypkgstatus - query function to read key/value pair by status of package
 //=================================================================================================================================
@@ -577,6 +762,225 @@ func (t *SimpleChaincode) querybypkgstatus(stub shim.ChaincodeStubInterface, arg
     }
 
   }
+
+  if len(result) == 1 {
+    result = "[]"
+  } else {
+    result = result[:len(result)-1] + "]"
+  }
+
+  return []byte(result), nil
+
+}
+
+//=================================================================================================================================
+//	querybyrole - query function to read key/value pair by role
+//=================================================================================================================================
+func (t *SimpleChaincode) querybyrole(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+
+  var jsonResp string
+  var err error
+
+  if len(args) != 2 {
+      jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass Role: Shipper, Owner, Insurer or Consignee & value to be passed\"}"
+      return nil, errors.New(jsonResp)
+      }
+
+// validate role
+  if args[0] == "Shipper"{
+  fmt.Println("Shipper has been passed as Role")
+  } else if args[0] == "Owner" {
+  fmt.Println("Owner has been passed as Role")
+  } else if args[0] == "Insurer" {
+  fmt.Println("Insurer has been passed as Role")
+  } else if args[0] == "Consignee" {
+  fmt.Println("Consignee has been passed as Role")
+  } else {
+    jsonResp = "{\"Error\":\"Incorrect Role has been passed, should be: Shipper, Owner, Insurer or Consignee\"}"
+    return nil, errors.New(jsonResp)
+  }
+
+  valAsbytes, err := stub.GetState("PkgIdsKey")
+  if err != nil {
+      jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+      return nil, errors.New(jsonResp)
+      }
+
+  var package_holder PKG_Holder
+  err = json.Unmarshal(valAsbytes, &package_holder)
+  if err != nil {
+            fmt.Println("Could not marshal personal info object", err)
+            jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+            return nil, errors.New(jsonResp)
+      }
+
+  var pkginfo PackageInfo
+
+  result := "["
+
+  var temp []byte
+
+  for _, PkgId := range package_holder.PkgIds  {
+
+    pkginfoasbytes, err := stub.GetState(PkgId)
+    if err != nil {
+      jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+      return nil, errors.New(jsonResp)
+    }
+
+    err = json.Unmarshal(pkginfoasbytes, &pkginfo);
+    if err != nil {
+              fmt.Println("Could not marshal personal info object", err)
+              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              return nil, errors.New(jsonResp)
+    }
+
+    // check for inout role
+    if args[0] == "Shipper"{
+      if pkginfo.Shipper == args[1] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+      }
+    } else if args[0] == "Owner" {
+      if pkginfo.Owner == args[1] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+      }
+    } else if args[0] == "Insurer" {
+      if pkginfo.Insurer == args[1] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+      }
+    } else if args[0] == "Consignee" {
+      if pkginfo.Consignee == args[1] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+      }
+    }
+
+
+  } // end of for loop
+
+  if len(result) == 1 {
+    result = "[]"
+  } else {
+    result = result[:len(result)-1] + "]"
+  }
+
+  return []byte(result), nil
+
+}
+
+
+//=================================================================================================================================
+//	querybyrole_status - query function to read key/value pair by role & status of package
+//=================================================================================================================================
+func (t *SimpleChaincode) querybyrole_status(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+
+  var jsonResp string
+  var err error
+
+  if len(args) != 3 {
+      jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass Role, Value and Status\"}"
+      return nil, errors.New(jsonResp)
+      }
+
+// validate role
+  if args[0] == "Shipper"{
+  fmt.Println("Shipper has been passed as Role")
+  } else if args[0] == "Owner" {
+  fmt.Println("Owner has been passed as Role")
+  } else if args[0] == "Insurer" {
+  fmt.Println("Insurer has been passed as Role")
+  } else if args[0] == "Consignee" {
+  fmt.Println("Consignee has been passed as Role")
+  } else {
+    jsonResp = "{\"Error\":\"Incorrect Role has been passed, should be: Shipper, Owner, Insurer or Consignee\"}"
+    return nil, errors.New(jsonResp)
+  }
+
+// validate status
+    if args[2] == "Label_Generated"{
+    fmt.Println("Label_Generated has been passed as status")
+    } else if args[2] == "In_Transit" {
+    fmt.Println("In_Transit has been passed as status")
+    } else if args[2] == "Pkg_Damaged" {
+    fmt.Println("Pkg_Damaged has been passed as status")
+    } else if args[2] == "Pkg_Delivered" {
+    fmt.Println("Pkg_Delivered has been passed as status")
+    } else {
+      jsonResp = "{\"Error\":\"Incorrect Status has been passed, should be: Label_Generated, In_Transit, Pkg_Damaged or Pkg_Delivered\"}"
+      return nil, errors.New(jsonResp)
+    }
+
+  valAsbytes, err := stub.GetState("PkgIdsKey")
+  if err != nil {
+      jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+      return nil, errors.New(jsonResp)
+      }
+
+  var package_holder PKG_Holder
+  err = json.Unmarshal(valAsbytes, &package_holder)
+  if err != nil {
+            fmt.Println("Could not marshal personal info object", err)
+            jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+            return nil, errors.New(jsonResp)
+      }
+
+  var pkginfo PackageInfo
+
+  result := "["
+
+  var temp []byte
+
+  for _, PkgId := range package_holder.PkgIds  {
+
+    pkginfoasbytes, err := stub.GetState(PkgId)
+    if err != nil {
+      jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+      return nil, errors.New(jsonResp)
+    }
+
+    err = json.Unmarshal(pkginfoasbytes, &pkginfo);
+    if err != nil {
+              fmt.Println("Could not marshal personal info object", err)
+              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              return nil, errors.New(jsonResp)
+    }
+
+    // check for inout role & Status - this is crude way to do this - need to find another way
+    if args[0] == "Shipper"{
+      if pkginfo.Shipper == args[1] {
+        if pkginfo.PkgStatus  == args[2] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+        }
+      }
+    } else if args[0] == "Owner" {
+      if pkginfo.Owner == args[1] {
+        if pkginfo.PkgStatus == args[2] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+        }
+      }
+    } else if args[0] == "Insurer" {
+      if pkginfo.Insurer == args[1] {
+        if pkginfo.PkgStatus == args[2] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+        }
+      }
+    } else if args[0] == "Consignee" {
+      if pkginfo.Consignee == args[1] {
+        if pkginfo.PkgStatus == args[2] {
+        temp = pkginfoasbytes
+        result += string(temp) + ","
+        }
+      }
+    }
+
+
+  } // end of for loop
 
   if len(result) == 1 {
     result = "[]"
