@@ -74,7 +74,7 @@ var packageinfo PackageInfo
 var err error
 
 //  Validate inpit
-if len(args) != 6 {
+if len(args) != 7 {
   jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 6 in order of Shipper, Insurer, Consignee, Temprature, PackageDes, Owner\"}"
   return nil, errors.New(jsonResp)
   }
