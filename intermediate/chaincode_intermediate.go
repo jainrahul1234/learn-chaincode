@@ -335,9 +335,14 @@ if len(args) != 2 {
           return nil, errors.New(jsonResp)
     }
 
+	if packageinfo.PkgStatus == "Pkg_Delivered" {    // Pkg_Damaged
+	  jsonResp = " Error: Package Already Delivered"
+	  return nil, errors.New(jsonResp)
+	  }
+
  // check wheather the pkg Provider is same as input value
 if packageinfo.Provider != "args[1]" {
-	  jsonResp = " Error :Wrong Pkg Provider passrd - Can not deliver Package"
+	  jsonResp = " Error :Wrong Pkg Provider passrd - Not authorized to deliver this Package"
 	  return nil, errors.New(jsonResp)
 	  }
 
@@ -364,6 +369,7 @@ if packageinfo.Provider != "args[1]" {
 //=================================================================================================================================
 //	updatetemp - update pkg status based on the supplied temprature
 //=================================================================================================================================
+
 func (t *SimpleChaincode) updatetemp(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 var key , jsonResp string
 var err error
