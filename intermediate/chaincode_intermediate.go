@@ -600,7 +600,7 @@ func (t *SimpleChaincode) queryallpkg(stub shim.ChaincodeStubInterface, args []s
 
 }
 //=================================================================================================================================
-//	querypkgbyprovider- query function to read key/value pair by given shipper
+//	querypkgbyprovider- query function to read key/value pair by given Provider
 //=================================================================================================================================
 func (t *SimpleChaincode) querypkgbyprovider(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
@@ -609,7 +609,7 @@ func (t *SimpleChaincode) querypkgbyprovider(stub shim.ChaincodeStubInterface, a
     var err error
 
     if len(args) != 1 {
-        jsonResp = "Error:Incorrect number of arguments. Need to pass Shipper"
+        jsonResp = "Error:Incorrect number of arguments. Need to pass Provider"
         return nil, errors.New(jsonResp)
         }
 
@@ -714,7 +714,7 @@ func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, ar
               return nil, errors.New(jsonResp)
     }
 
-// check for inout owner
+// check for inout Shipper
     if pkginfo.Shipper == args[0] {
       temp = pkginfoasbytes
       result += string(temp) + ","
