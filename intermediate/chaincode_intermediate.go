@@ -194,6 +194,14 @@ if err != nil {
         return nil, err
   }
 
+// check for duplicate package id
+valAsbytes, err := stub.GetState(key)
+
+if valAsbytes != nil {
+  jsonResp = " Package already present on blockchain " + key
+  return nil, errors.New(jsonResp)
+  }
+
 //  populate package holder
 var packageids_array PKG_Holder
 packageids_arrayasbytes, err := stub.GetState("PkgIdsKey")
