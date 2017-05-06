@@ -28,7 +28,7 @@ type PackageInfo struct {
   Shipper    string `json:"shipper"`
   Insurer    string `json:"insurer"`
   Consignee  string `json:"consignee"`
-  Owner      string `json:"owner"`
+  Provider      string `json:"provider"`
   TempratureMin int `json:"Tempraturemin"`
   TempratureMax int `json:"Tempraturemax"`
   PackageDes string `json:"packagedes"`
@@ -75,7 +75,7 @@ var err error
 
 //  Validate inpit
 if len(args) != 7 {
-  jsonResp = "Error: Incorrect number of arguments. Expecting 6 in order of Shipper, Insurer, Consignee, Temprature, PackageDes, Owner "
+  jsonResp = "Error: Incorrect number of arguments. Expecting 6 in order of Shipper, Insurer, Consignee, Temprature, PackageDes, Provider "
   return nil, errors.New(jsonResp)
   }
 
@@ -85,7 +85,7 @@ packageinfo.PkgId = "1Z20170426"
 packageinfo.Shipper = args[0]
 packageinfo.Insurer  = args[1]
 packageinfo.Consignee  = args[2]
-packageinfo.Owner = args[3]
+packageinfo.Provider = args[3]
 packageinfo.TempratureMin, err = strconv.Atoi(args[4])
 if err != nil {
   jsonResp = "Error :5th argument must be a numeric string"
@@ -162,7 +162,7 @@ var key, jsonResp string
 var err error
 
 if len(args) != 8 {
-  jsonResp = " Error: Incorrect number of arguments. Expecting 8 in order of PkgID, Shipper, Insurer, Consignee, TempratureMin, TempratureMax, PackageDes, Owner "
+  jsonResp = " Error: Incorrect number of arguments. Expecting 8 in order of PkgID, Shipper, Insurer, Consignee, TempratureMin, TempratureMax, PackageDes, Provider "
   return nil, errors.New(jsonResp)
   }
 
@@ -185,7 +185,7 @@ if err != nil {
   return nil, errors.New(jsonResp)
 	}
 packageinfo.PackageDes = args[6]
-packageinfo.Owner = args[7]
+packageinfo.Provider = args[7]
 packageinfo.PkgStatus = "Label_Generated"   // Label_Generated
 
 bytes, err := json.Marshal(&packageinfo)
@@ -222,7 +222,7 @@ return nil, nil
 }
 
 //=================================================================================================================================
-//	acceptpkg - Accept Package from Shipper , change owner & status
+//	acceptpkg - Accept Package from Shipper , change status
 //=================================================================================================================================
 func (t *SimpleChaincode) acceptpkg(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 fmt.Println("running acceptpkg()")
@@ -230,7 +230,7 @@ var key , jsonResp string
 var err error
 
 if len(args) != 2 {
-	jsonResp = " Error:Incorrect number of arguments. Expecting 1 : PkgId and New Owner "
+	jsonResp = " Error:Incorrect number of arguments. Expecting : PkgId and Provider "
   	return nil, errors.New(jsonResp)
   }
 
@@ -262,7 +262,12 @@ if len(args) != 2 {
           return nil, errors.New(jsonResp)
     }
 
-  //packageinfo.Owner = args[1]
+	if packageinfo.Provider != args[1] {    // Pkg_Damaged
+		  jsonResp = "Error : Wrong Provider passed - Can not accept the package "
+	          return nil, errors.New(jsonResp)
+	    }
+
+  //packageinfo.Provider = args[1]
   packageinfo.PkgStatus = "In_Transit"
 
   bytes, err := json.Marshal(&packageinfo)
@@ -282,7 +287,7 @@ if len(args) != 2 {
 
 
 //=================================================================================================================================
-//	deliverpkg - deliver package to cosignee, change owner of package
+//	deliverpkg - deliver package to cosignee, change status of the package
 //=================================================================================================================================
 func (t *SimpleChaincode) deliverpkg(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 fmt.Println("running deliverpkg()")
@@ -290,7 +295,7 @@ var key , jsonResp string
 var err error
 
 if len(args) != 2 {
-	jsonResp = " Error : Incorrect number of arguments. Expecting 2 : PkgId and New Owner "
+	jsonResp = " Error : Incorrect number of arguments. Expecting 2 : PkgId and Provider "
   	return nil, errors.New(jsonResp)
   }
 
@@ -321,6 +326,12 @@ if len(args) != 2 {
 	  jsonResp = " Error: Temprature thershold crossed - Package Damaged"
           return nil, errors.New(jsonResp)
     }
+
+ // check wheather the pkg Provider is same as input value
+if packageinfo.Provider != "args[1]" {
+	  jsonResp = " Error :Wrong Pkg Provider passrd - Can not deliver Package"
+	  return nil, errors.New(jsonResp)
+	  }
 
 //  packageinfo.Owner = args[1]
   packageinfo.PkgStatus = "Pkg_Delivered"
@@ -624,7 +635,7 @@ func (t *SimpleChaincode) querypkgbyprovider(stub shim.ChaincodeStubInterface, a
       }
 
   // check for inout owner
-      if pkginfo.Shipper == args[0] {
+      if pkginfo.Provider == args[0] {
         temp = pkginfoasbytes
         result += string(temp) + ","
       }
@@ -642,7 +653,7 @@ func (t *SimpleChaincode) querypkgbyprovider(stub shim.ChaincodeStubInterface, a
 }
 
 //=================================================================================================================================
-//	querypkgbyshipper - query function to read key/value pair by owner/shipper of package
+//	querypkgbyshipper - query function to read key/value pair by shipper of package
 //=================================================================================================================================
 func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
@@ -650,7 +661,7 @@ func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, ar
   var err error
 
   if len(args) != 1 {
-      jsonResp = "Error: Incorrect number of arguments. Need to pass Owner "
+      jsonResp = "Error: Incorrect number of arguments. Need to pass Shipper "
       return nil, errors.New(jsonResp)
       }
 
@@ -690,7 +701,7 @@ func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, ar
     }
 
 // check for inout owner
-    if pkginfo.Owner == args[0] {
+    if pkginfo.Shipper == args[0] {
       temp = pkginfoasbytes
       result += string(temp) + ","
     }
@@ -782,21 +793,21 @@ func (t *SimpleChaincode) querybyrole(stub shim.ChaincodeStubInterface, args []s
   var err error
 
   if len(args) != 2 {
-      jsonResp = "Error:Incorrect number of arguments. Need to pass Role: Shipper, Owner, Insurer or Consignee & value to be passed"
+      jsonResp = "Error:Incorrect number of arguments. Need to pass Role: Shipper, Provider, Insurer or Consignee & status value to be passed"
       return nil, errors.New(jsonResp)
       }
 
 // validate role
   if args[0] == "Shipper"{
   fmt.Println("Shipper has been passed as Role")
-  } else if args[0] == "Owner" {
-  fmt.Println("Owner has been passed as Role")
+  } else if args[0] == "Provider" {
+  fmt.Println("Provider has been passed as Role")
   } else if args[0] == "Insurer" {
   fmt.Println("Insurer has been passed as Role")
   } else if args[0] == "Consignee" {
   fmt.Println("Consignee has been passed as Role")
   } else {
-    jsonResp = " Error:Incorrect Role has been passed, should be: Shipper, Owner, Insurer or Consignee"
+    jsonResp = " Error:Incorrect Role has been passed, should be: Shipper, Provider, Insurer or Consignee"
     return nil, errors.New(jsonResp)
   }
 
@@ -837,12 +848,12 @@ func (t *SimpleChaincode) querybyrole(stub shim.ChaincodeStubInterface, args []s
 
     // check for inout role
     if args[0] == "Provider"{
-      if pkginfo.Shipper == args[1] {
+      if pkginfo.Provider == args[1] {
         temp = pkginfoasbytes
         result += string(temp) + ","
       }
     } else if args[0] == "Shipper" {
-      if pkginfo.Owner == args[1] {
+      if pkginfo.Shipper == args[1] {
         temp = pkginfoasbytes
         result += string(temp) + ","
       }
@@ -888,14 +899,14 @@ func (t *SimpleChaincode) querybyrole_status(stub shim.ChaincodeStubInterface, a
 // validate role
   if args[0] == "Shipper"{
   fmt.Println("Shipper has been passed as Role")
-  } else if args[0] == "Owner" {
-  fmt.Println("Owner has been passed as Role")
+  } else if args[0] == "Provider" {
+  fmt.Println("Provider has been passed as Role")
   } else if args[0] == "Insurer" {
   fmt.Println("Insurer has been passed as Role")
   } else if args[0] == "Consignee" {
   fmt.Println("Consignee has been passed as Role")
   } else {
-    jsonResp = "Error:Incorrect Role has been passed, should be: Shipper, Owner, Insurer or Consignee"
+    jsonResp = "Error:Incorrect Role has been passed, should be: Shipper, Provider, Insurer or Consignee"
     return nil, errors.New(jsonResp)
   }
 
@@ -950,14 +961,14 @@ func (t *SimpleChaincode) querybyrole_status(stub shim.ChaincodeStubInterface, a
 
     // check for inout role & Status - this is crude way to do this - need to find another way
     if args[0] == "Provider"{
-      if pkginfo.Shipper == args[1] {
+      if pkginfo.Provider == args[1] {
         if pkginfo.PkgStatus  == args[2] {
         temp = pkginfoasbytes
         result += string(temp) + ","
         }
       }
     } else if args[0] == "Shipper" {
-      if pkginfo.Owner == args[1] {
+      if pkginfo.Shipper == args[1] {
         if pkginfo.PkgStatus == args[2] {
         temp = pkginfoasbytes
         result += string(temp) + ","
