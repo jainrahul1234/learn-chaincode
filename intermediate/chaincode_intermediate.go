@@ -262,7 +262,7 @@ if len(args) != 2 {
           return nil, errors.New(jsonResp)
     }
 
-  packageinfo.Owner = args[1]
+  //packageinfo.Owner = args[1]
   packageinfo.PkgStatus = "In_Transit"
 
   bytes, err := json.Marshal(&packageinfo)
@@ -322,7 +322,7 @@ if len(args) != 2 {
           return nil, errors.New(jsonResp)
     }
 
-  packageinfo.Owner = args[1]
+//  packageinfo.Owner = args[1]
   packageinfo.PkgStatus = "Pkg_Delivered"
 
   bytes, err := json.Marshal(&packageinfo)
@@ -423,10 +423,10 @@ if function == "querypkgbyid" {
   return t.queryallpkgids(stub, args)
   } else if function == "queryallpkg" {
   return t.queryallpkg(stub, args)
+  } else if function == "querypkgbyprovider" {
+  return t.querypkgbyprovider(stub, args)
   } else if function == "querypkgbyshipper" {
   return t.querypkgbyshipper(stub, args)
-  } else if function == "querypkgbyowner" {
-  return t.querypkgbyowner(stub, args)
   } else if function == "querybypkgstatus"  {
   return t.querybypkgstatus(stub, args)
   } else if function == "querybyrole"{
@@ -575,9 +575,9 @@ func (t *SimpleChaincode) queryallpkg(stub shim.ChaincodeStubInterface, args []s
 
 }
 //=================================================================================================================================
-//	querypkgbyshipper - query function to read key/value pair by given shipper
+//	querypkgbyprovider- query function to read key/value pair by given shipper
 //=================================================================================================================================
-func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+func (t *SimpleChaincode) querypkgbyprovider(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
 
     var jsonResp string
@@ -642,9 +642,9 @@ func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, ar
 }
 
 //=================================================================================================================================
-//	querypkgbyowner - query function to read key/value pair by owner of package
+//	querypkgbyshipper - query function to read key/value pair by owner/shipper of package
 //=================================================================================================================================
-func (t *SimpleChaincode) querypkgbyowner(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
   var jsonResp string
   var err error
@@ -836,12 +836,12 @@ func (t *SimpleChaincode) querybyrole(stub shim.ChaincodeStubInterface, args []s
     }
 
     // check for inout role
-    if args[0] == "Shipper"{
+    if args[0] == "Provider"{
       if pkginfo.Shipper == args[1] {
         temp = pkginfoasbytes
         result += string(temp) + ","
       }
-    } else if args[0] == "Owner" {
+    } else if args[0] == "Shipper" {
       if pkginfo.Owner == args[1] {
         temp = pkginfoasbytes
         result += string(temp) + ","
@@ -949,14 +949,14 @@ func (t *SimpleChaincode) querybyrole_status(stub shim.ChaincodeStubInterface, a
     }
 
     // check for inout role & Status - this is crude way to do this - need to find another way
-    if args[0] == "Shipper"{
+    if args[0] == "Provider"{
       if pkginfo.Shipper == args[1] {
         if pkginfo.PkgStatus  == args[2] {
         temp = pkginfoasbytes
         result += string(temp) + ","
         }
       }
-    } else if args[0] == "Owner" {
+    } else if args[0] == "Shipper" {
       if pkginfo.Owner == args[1] {
         if pkginfo.PkgStatus == args[2] {
         temp = pkginfoasbytes
