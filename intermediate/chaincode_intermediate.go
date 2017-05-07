@@ -341,7 +341,7 @@ if len(args) != 2 {
 	  }
 
  // check wheather the pkg Provider is same as input value
-if packageinfo.Provider != "args[1]" {
+if packageinfo.Provider != args[1] {
 	  jsonResp = " Error :Wrong Pkg Provider passrd - Not authorized to deliver this Package"
 	  return nil, errors.New(jsonResp)
 	  }
