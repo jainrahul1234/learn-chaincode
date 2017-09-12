@@ -1,3 +1,17 @@
+/*
+Copyright IBM Corp 2016 All Rights Reserved.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+		 http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+
 package main
 
 import (
@@ -28,7 +42,7 @@ type PackageInfo struct {
   Shipper    string `json:"shipper"`
   Insurer    string `json:"insurer"`
   Consignee  string `json:"consignee"`
-  Owner      string `json:"owner"`
+  Provider      string `json:"provider"`
   TempratureMin int `json:"Tempraturemin"`
   TempratureMax int `json:"Tempraturemax"`
   PackageDes string `json:"packagedes"`
@@ -75,7 +89,7 @@ var err error
 
 //  Validate inpit
 if len(args) != 7 {
-  jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 6 in order of Shipper, Insurer, Consignee, Temprature, PackageDes, Owner\"}"
+  jsonResp = "Error: Incorrect number of arguments. Expecting 6 in order of Shipper, Insurer, Consignee, Temprature, PackageDes, Provider "
   return nil, errors.New(jsonResp)
   }
 
@@ -85,15 +99,15 @@ packageinfo.PkgId = "1Z20170426"
 packageinfo.Shipper = args[0]
 packageinfo.Insurer  = args[1]
 packageinfo.Consignee  = args[2]
-packageinfo.Owner = args[3]
+packageinfo.Provider = args[3]
 packageinfo.TempratureMin, err = strconv.Atoi(args[4])
 if err != nil {
-  jsonResp = "{\"Error\":\"5th argument must be a numeric string\"}"
+  jsonResp = "Error :5th argument must be a numeric string"
   return nil, errors.New(jsonResp)
 	}
 packageinfo.TempratureMax, err = strconv.Atoi(args[5])
 if err != nil {
-    jsonResp = "{\"Error\":\"6th argument must be a numeric string\"}"
+    jsonResp = "Error: 6th argument must be a numeric string "
     return nil, errors.New(jsonResp)
   	}
 packageinfo.PackageDes = args[6]
@@ -162,7 +176,7 @@ var key, jsonResp string
 var err error
 
 if len(args) != 8 {
-  jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 8 in order of PkgID, Shipper, Insurer, Consignee, TempratureMin, TempratureMax, PackageDes, Owner\"}"
+  jsonResp = " Error: Incorrect number of arguments. Expecting 8 in order of PkgID, Shipper, Insurer, Consignee, TempratureMin, TempratureMax, PackageDes, Provider "
   return nil, errors.New(jsonResp)
   }
 
@@ -176,22 +190,30 @@ packageinfo.Insurer = args[2]
 packageinfo.Consignee  = args[3]
 packageinfo.TempratureMin , err = strconv.Atoi(args[4])
 if err != nil {
-  jsonResp = "{\"Error\":\"5th argument must be a numeric string\"}"
+  jsonResp = " Error: 5th argument must be a numeric string "
   return nil, errors.New(jsonResp)
 	}
 packageinfo.TempratureMax  , err = strconv.Atoi(args[5])
 if err != nil {
-  jsonResp = "{\"Error\":\"5th argument must be a numeric string\"}"
+  jsonResp = " Error: 5th argument must be a numeric string "
   return nil, errors.New(jsonResp)
 	}
 packageinfo.PackageDes = args[6]
-packageinfo.Owner = args[7]
+packageinfo.Provider = args[7]
 packageinfo.PkgStatus = "Label_Generated"   // Label_Generated
 
 bytes, err := json.Marshal(&packageinfo)
 if err != nil {
         fmt.Println("Could not marshal personal info object", err)
         return nil, err
+  }
+
+// check for duplicate package id
+valAsbytes, err := stub.GetState(key)
+
+if valAsbytes != nil {
+  jsonResp = " Package already present on blockchain " + key
+  return nil, errors.New(jsonResp)
   }
 
 //  populate package holder
@@ -222,7 +244,7 @@ return nil, nil
 }
 
 //=================================================================================================================================
-//	acceptpkg - Accept Package from Shipper , change owner & status
+//	acceptpkg - Accept Package from Shipper , change status
 //=================================================================================================================================
 func (t *SimpleChaincode) acceptpkg(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 fmt.Println("running acceptpkg()")
@@ -230,7 +252,7 @@ var key , jsonResp string
 var err error
 
 if len(args) != 2 {
-	jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 1 : PkgId and New Owner\"}"
+	jsonResp = " Error:Incorrect number of arguments. Expecting : PkgId and Provider "
   	return nil, errors.New(jsonResp)
   }
 
@@ -240,7 +262,7 @@ if len(args) != 2 {
   valAsbytes, err := stub.GetState(key)
 
   if err != nil {
-    jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
+    jsonResp = " Error Failed to get state for " + key
     return nil, errors.New(jsonResp)
     }
 
@@ -252,17 +274,22 @@ if len(args) != 2 {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-    jsonResp = "{\"Error\":\"Invalid PackageId Passed\"}"
+    jsonResp = "Error: Invalid PackageId Passed "
     return nil, errors.New(jsonResp)
     }
 
   // check wheather the pkg temprature is in acceptable range and package in in valid status
   if packageinfo.PkgStatus == "Pkg_Damaged" {    // Pkg_Damaged
-	  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package Damaged\"}"
+	  jsonResp = "Error : Temprature thershold crossed - Package Damaged "
           return nil, errors.New(jsonResp)
     }
 
-  packageinfo.Owner = args[1]
+	if packageinfo.Provider != args[1] {    // Pkg_Damaged
+		  jsonResp = "Error : Wrong Provider passed - Can not accept the package "
+	          return nil, errors.New(jsonResp)
+	    }
+
+  //packageinfo.Provider = args[1]
   packageinfo.PkgStatus = "In_Transit"
 
   bytes, err := json.Marshal(&packageinfo)
@@ -282,7 +309,7 @@ if len(args) != 2 {
 
 
 //=================================================================================================================================
-//	deliverpkg - deliver package to cosignee, change owner of package
+//	deliverpkg - deliver package to cosignee, change status of the package
 //=================================================================================================================================
 func (t *SimpleChaincode) deliverpkg(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 fmt.Println("running deliverpkg()")
@@ -290,7 +317,7 @@ var key , jsonResp string
 var err error
 
 if len(args) != 2 {
-	jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 2 : PkgId and New Owner\"}"
+	jsonResp = " Error : Incorrect number of arguments. Expecting 2 : PkgId and Provider "
   	return nil, errors.New(jsonResp)
   }
 
@@ -300,7 +327,7 @@ if len(args) != 2 {
   valAsbytes, err := stub.GetState(key)
 
   if err != nil {
-    jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
+    jsonResp = "Error : Failed to get state for " + key
     return nil, errors.New(jsonResp)
     }
 
@@ -312,17 +339,28 @@ if len(args) != 2 {
 
 // validate pkd exist or not by checking temprature
   if packageinfo.PkgId != key{
-    jsonResp = "{\"Error\":\"Invalid PackageId Passed\"}"
+    jsonResp = "Error: Invalid PackageId Passed "
     return nil, errors.New(jsonResp)
     }
 
   // check wheather the pkg temprature is in acceptable range and package in in valid status
   if packageinfo.PkgStatus == "Pkg_Damaged" {    // Pkg_Damaged
-	  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package Damaged\"}"
+	  jsonResp = " Error: Temprature thershold crossed - Package Damaged"
           return nil, errors.New(jsonResp)
     }
 
-  packageinfo.Owner = args[1]
+	if packageinfo.PkgStatus == "Pkg_Delivered" {    // Pkg_Damaged
+	  jsonResp = " Error: Package Already Delivered"
+	  return nil, errors.New(jsonResp)
+	  }
+
+ // check wheather the pkg Provider is same as input value
+if packageinfo.Provider != args[1] {
+	  jsonResp = " Error :Wrong Pkg Provider passrd - Not authorized to deliver this Package"
+	  return nil, errors.New(jsonResp)
+	  }
+
+//  packageinfo.Owner = args[1]
   packageinfo.PkgStatus = "Pkg_Delivered"
 
   bytes, err := json.Marshal(&packageinfo)
@@ -345,13 +383,14 @@ if len(args) != 2 {
 //=================================================================================================================================
 //	updatetemp - update pkg status based on the supplied temprature
 //=================================================================================================================================
+
 func (t *SimpleChaincode) updatetemp(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 var key , jsonResp string
 var err error
 fmt.Println("running updatetemp()")
 
 if len(args) != 2 {
-  jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting 2. name of the key and temprature value to set\"}"
+  jsonResp = "Error :Incorrect number of arguments. Expecting 2. name of the key and temprature value to set"
   return nil, errors.New(jsonResp)
   }
 
@@ -363,7 +402,7 @@ var temprature_reading int
 valAsbytes, err := stub.GetState(key)
 
 if err != nil {
-  jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
+  jsonResp = "Error :Failed to get state for " + key
   return nil, errors.New(jsonResp)
   }
 
@@ -374,19 +413,19 @@ if err != nil {
   }
 // validate pkd exist or not by checking temprature
 if packageinfo.PkgId != key{
-  jsonResp = "{\"Error\":\"Invalid PackageId Passed\"}"
+  jsonResp = " Error : Invalid PackageId Passed "
   return nil, errors.New(jsonResp)
   }
 
 // check wheather the pkg temprature is in acceptable range and package in in valid status
 if packageinfo.PkgStatus == "Pkg_Damaged" {
-  jsonResp = "{\"Error\":\"Temprature thershold crossed - Package Damaged\"}"
+  jsonResp = " Error :Temprature thershold crossed - Package Damaged"
   return nil, errors.New(jsonResp)
   }
 
 temprature_reading, err = strconv.Atoi(args[1])
 if err != nil {
-	jsonResp = "{\"Error\":\"2nd argument must be a numeric string\"}"
+	jsonResp = " Error : 2nd argument must be a numeric string"
   	return nil, errors.New(jsonResp)
 	}
 
@@ -423,10 +462,10 @@ if function == "querypkgbyid" {
   return t.queryallpkgids(stub, args)
   } else if function == "queryallpkg" {
   return t.queryallpkg(stub, args)
+  } else if function == "querypkgbyprovider" {
+  return t.querypkgbyprovider(stub, args)
   } else if function == "querypkgbyshipper" {
   return t.querypkgbyshipper(stub, args)
-  } else if function == "querypkgbyowner" {
-  return t.querypkgbyowner(stub, args)
   } else if function == "querybypkgstatus"  {
   return t.querybypkgstatus(stub, args)
   } else if function == "querybyrole"{
@@ -450,19 +489,19 @@ var err error
 key = args[0]
 
 if len(args) != 1 {
-  jsonResp = "{\"Error\":\"Incorrect number of arguments. Expecting PkgID to query " + key + "\"}"
-  //return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
+  jsonResp = " Error: Incorrect number of arguments. Expecting PkgID to query  " + key
+	//return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
   return nil, errors.New(jsonResp)
   }
 
 valAsbytes, err := stub.GetState(key)
 if err != nil {
-  jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
+  jsonResp = "Error :Failed to get state for " + key
   return nil, errors.New(jsonResp)
 }
 
 if valAsbytes == nil {
-  jsonResp = "{\"Error\":\"Invalid PackageId Passed" + key + "\"}"
+  jsonResp = " Error: Invalid PackageId Passed " + key
   return nil, errors.New(jsonResp)
   }
 
@@ -470,14 +509,14 @@ var packageinfo PackageInfo
 err = json.Unmarshal(valAsbytes, &packageinfo)
 if err != nil {
       fmt.Println("Could not marshal personal info object", err)
-      jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+      jsonResp = " Error :Could not marshal personal info object"
       return nil, errors.New(jsonResp)
 }
 
 // validate pkg exist or not by checking temprature
 if packageinfo.PkgId != key{
 	  fmt.Println("Invalid PackageId Passed")
-	  jsonResp = "{\"Error\":\"Invalid PackageId Passed" + key + "\"}"
+	  jsonResp = " Error :Invalid PackageId Passed " + key
           return nil, errors.New(jsonResp)
     }
 
@@ -493,18 +532,18 @@ var jsonResp string
 var err error
 
 if len(args) != 0 {
-    jsonResp = "{\"Error\":\"Incorrect number of arguments.\"}"
+    jsonResp = " Error: Incorrect number of arguments "
     return nil, errors.New(jsonResp)
     }
 
 valAsbytes, err := stub.GetState("PkgIdsKey")
 if err != nil {
-    jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+    jsonResp = "Error: Failed to get state for PkgIdsKey "
     return nil, errors.New(jsonResp)
     }
 
 if valAsbytes == nil {
-    jsonResp = "{\"Error\":\"Invalid PackageId Passed fpr PkgIdsKey \"}"
+    jsonResp = "Error: Invalid PackageId Passed fpr PkgIdsKey "
     return nil, errors.New(jsonResp)
     }
 
@@ -521,13 +560,13 @@ func (t *SimpleChaincode) queryallpkg(stub shim.ChaincodeStubInterface, args []s
   var err error
 
   if len(args) != 0 {
-      jsonResp = "{\"Error\":\"Incorrect number of arguments.\"}"
+      jsonResp = "Error: Incorrect number of arguments."
       return nil, errors.New(jsonResp)
       }
 
   valAsbytes, err := stub.GetState("PkgIdsKey")
   if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+      jsonResp = "Error:Failed to get state for PkgIdsKey "
       return nil, errors.New(jsonResp)
       }
 
@@ -535,7 +574,7 @@ func (t *SimpleChaincode) queryallpkg(stub shim.ChaincodeStubInterface, args []s
   err = json.Unmarshal(valAsbytes, &package_holder)
   if err != nil {
             fmt.Println("Could not marshal personal info object", err)
-            jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+            jsonResp = "Error: Could not marshal personal info object"
             return nil, errors.New(jsonResp)
       }
 
@@ -549,14 +588,14 @@ func (t *SimpleChaincode) queryallpkg(stub shim.ChaincodeStubInterface, args []s
 
     pkginfoasbytes, err := stub.GetState(PkgId)
     if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+      jsonResp = "Error:Failed to get state for " + PkgId
       return nil, errors.New(jsonResp)
     }
 
     err = json.Unmarshal(pkginfoasbytes, &pkginfo);
     if err != nil {
               fmt.Println("Could not marshal personal info object", err)
-              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              jsonResp = "Error: Could not marshal personal info object"
               return nil, errors.New(jsonResp)
     }
 
@@ -575,22 +614,22 @@ func (t *SimpleChaincode) queryallpkg(stub shim.ChaincodeStubInterface, args []s
 
 }
 //=================================================================================================================================
-//	querypkgbyshipper - query function to read key/value pair by given shipper
+//	querypkgbyprovider- query function to read key/value pair by given Provider
 //=================================================================================================================================
-func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+func (t *SimpleChaincode) querypkgbyprovider(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
 
     var jsonResp string
     var err error
 
     if len(args) != 1 {
-        jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass Shipper\"}"
+        jsonResp = "Error:Incorrect number of arguments. Need to pass Provider"
         return nil, errors.New(jsonResp)
         }
 
     valAsbytes, err := stub.GetState("PkgIdsKey")
     if err != nil {
-        jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+        jsonResp = "Error:Failed to get state for PkgIdsKey "
         return nil, errors.New(jsonResp)
         }
 
@@ -598,7 +637,7 @@ func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, ar
     err = json.Unmarshal(valAsbytes, &package_holder)
     if err != nil {
               fmt.Println("Could not marshal personal info object", err)
-              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              jsonResp = "Error:Could not marshal personal info object"
               return nil, errors.New(jsonResp)
         }
 
@@ -612,19 +651,19 @@ func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, ar
 
       pkginfoasbytes, err := stub.GetState(PkgId)
       if err != nil {
-        jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+        jsonResp = " Error:Failed to get state for " + PkgId
         return nil, errors.New(jsonResp)
       }
 
       err = json.Unmarshal(pkginfoasbytes, &pkginfo);
       if err != nil {
                 fmt.Println("Could not marshal personal info object", err)
-                jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+                jsonResp = "Error: Could not marshal personal info object "
                 return nil, errors.New(jsonResp)
       }
 
   // check for inout owner
-      if pkginfo.Shipper == args[0] {
+      if pkginfo.Provider == args[0] {
         temp = pkginfoasbytes
         result += string(temp) + ","
       }
@@ -642,21 +681,21 @@ func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, ar
 }
 
 //=================================================================================================================================
-//	querypkgbyowner - query function to read key/value pair by owner of package
+//	querypkgbyshipper - query function to read key/value pair by shipper of package
 //=================================================================================================================================
-func (t *SimpleChaincode) querypkgbyowner(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+func (t *SimpleChaincode) querypkgbyshipper(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
 
   var jsonResp string
   var err error
 
   if len(args) != 1 {
-      jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass Owner\"}"
+      jsonResp = "Error: Incorrect number of arguments. Need to pass Shipper "
       return nil, errors.New(jsonResp)
       }
 
   valAsbytes, err := stub.GetState("PkgIdsKey")
   if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+      jsonResp = "Error: Failed to get state for PkgIdsKey "
       return nil, errors.New(jsonResp)
       }
 
@@ -664,7 +703,7 @@ func (t *SimpleChaincode) querypkgbyowner(stub shim.ChaincodeStubInterface, args
   err = json.Unmarshal(valAsbytes, &package_holder)
   if err != nil {
             fmt.Println("Could not marshal personal info object", err)
-            jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+            jsonResp = " Error:Could not marshal personal info object"
             return nil, errors.New(jsonResp)
       }
 
@@ -678,19 +717,19 @@ func (t *SimpleChaincode) querypkgbyowner(stub shim.ChaincodeStubInterface, args
 
     pkginfoasbytes, err := stub.GetState(PkgId)
     if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+      jsonResp = "Error:Failed to get state for " + PkgId
       return nil, errors.New(jsonResp)
     }
 
     err = json.Unmarshal(pkginfoasbytes, &pkginfo);
     if err != nil {
               fmt.Println("Could not marshal personal info object", err)
-              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              jsonResp = " Error:Could not marshal personal info object"
               return nil, errors.New(jsonResp)
     }
 
-// check for inout owner
-    if pkginfo.Owner == args[0] {
+// check for inout Shipper
+    if pkginfo.Shipper == args[0] {
       temp = pkginfoasbytes
       result += string(temp) + ","
     }
@@ -716,13 +755,13 @@ func (t *SimpleChaincode) querybypkgstatus(stub shim.ChaincodeStubInterface, arg
   var err error
 
   if len(args) != 1 {
-      jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass status\"}"
+      jsonResp = "Error: Incorrect number of arguments. Need to pass status"
       return nil, errors.New(jsonResp)
       }
 
   valAsbytes, err := stub.GetState("PkgIdsKey")
   if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+      jsonResp = " Error:Failed to get state for PkgIdsKey "
       return nil, errors.New(jsonResp)
       }
 
@@ -730,7 +769,7 @@ func (t *SimpleChaincode) querybypkgstatus(stub shim.ChaincodeStubInterface, arg
   err = json.Unmarshal(valAsbytes, &package_holder)
   if err != nil {
             fmt.Println("Could not marshal personal info object", err)
-            jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+            jsonResp = " Error: Could not marshal personal info object"
             return nil, errors.New(jsonResp)
       }
 
@@ -744,14 +783,14 @@ func (t *SimpleChaincode) querybypkgstatus(stub shim.ChaincodeStubInterface, arg
 
     pkginfoasbytes, err := stub.GetState(PkgId)
     if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+      jsonResp = "Error:Failed to get state for " + PkgId
       return nil, errors.New(jsonResp)
     }
 
     err = json.Unmarshal(pkginfoasbytes, &pkginfo);
     if err != nil {
               fmt.Println("Could not marshal personal info object", err)
-              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              jsonResp = "Error: Could not marshal personal info object "
               return nil, errors.New(jsonResp)
     }
 
@@ -782,27 +821,27 @@ func (t *SimpleChaincode) querybyrole(stub shim.ChaincodeStubInterface, args []s
   var err error
 
   if len(args) != 2 {
-      jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass Role: Shipper, Owner, Insurer or Consignee & value to be passed\"}"
+      jsonResp = "Error:Incorrect number of arguments. Need to pass Role: Shipper, Provider, Insurer or Consignee & status value to be passed"
       return nil, errors.New(jsonResp)
       }
 
 // validate role
   if args[0] == "Shipper"{
   fmt.Println("Shipper has been passed as Role")
-  } else if args[0] == "Owner" {
-  fmt.Println("Owner has been passed as Role")
+  } else if args[0] == "Provider" {
+  fmt.Println("Provider has been passed as Role")
   } else if args[0] == "Insurer" {
   fmt.Println("Insurer has been passed as Role")
   } else if args[0] == "Consignee" {
   fmt.Println("Consignee has been passed as Role")
   } else {
-    jsonResp = "{\"Error\":\"Incorrect Role has been passed, should be: Shipper, Owner, Insurer or Consignee\"}"
+    jsonResp = " Error:Incorrect Role has been passed, should be: Shipper, Provider, Insurer or Consignee"
     return nil, errors.New(jsonResp)
   }
 
   valAsbytes, err := stub.GetState("PkgIdsKey")
   if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+      jsonResp = "Error:Failed to get state for PkgIdsKey "
       return nil, errors.New(jsonResp)
       }
 
@@ -810,7 +849,7 @@ func (t *SimpleChaincode) querybyrole(stub shim.ChaincodeStubInterface, args []s
   err = json.Unmarshal(valAsbytes, &package_holder)
   if err != nil {
             fmt.Println("Could not marshal personal info object", err)
-            jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+            jsonResp = "Error:Could not marshal personal info object"
             return nil, errors.New(jsonResp)
       }
 
@@ -824,25 +863,25 @@ func (t *SimpleChaincode) querybyrole(stub shim.ChaincodeStubInterface, args []s
 
     pkginfoasbytes, err := stub.GetState(PkgId)
     if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+      jsonResp = "Error:Failed to get state for " + PkgId
       return nil, errors.New(jsonResp)
     }
 
     err = json.Unmarshal(pkginfoasbytes, &pkginfo);
     if err != nil {
               fmt.Println("Could not marshal personal info object", err)
-              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              jsonResp = "Error:Could not marshal personal info object"
               return nil, errors.New(jsonResp)
     }
 
     // check for inout role
-    if args[0] == "Shipper"{
-      if pkginfo.Shipper == args[1] {
+    if args[0] == "Provider"{
+      if pkginfo.Provider == args[1] {
         temp = pkginfoasbytes
         result += string(temp) + ","
       }
-    } else if args[0] == "Owner" {
-      if pkginfo.Owner == args[1] {
+    } else if args[0] == "Shipper" {
+      if pkginfo.Shipper == args[1] {
         temp = pkginfoasbytes
         result += string(temp) + ","
       }
@@ -881,21 +920,21 @@ func (t *SimpleChaincode) querybyrole_status(stub shim.ChaincodeStubInterface, a
   var err error
 
   if len(args) != 3 {
-      jsonResp = "{\"Error\":\"Incorrect number of arguments. Need to pass Role, Value and Status\"}"
+      jsonResp = "Error: Incorrect number of arguments. Need to pass Role, Value and Status "
       return nil, errors.New(jsonResp)
       }
 
 // validate role
   if args[0] == "Shipper"{
   fmt.Println("Shipper has been passed as Role")
-  } else if args[0] == "Owner" {
-  fmt.Println("Owner has been passed as Role")
+  } else if args[0] == "Provider" {
+  fmt.Println("Provider has been passed as Role")
   } else if args[0] == "Insurer" {
   fmt.Println("Insurer has been passed as Role")
   } else if args[0] == "Consignee" {
   fmt.Println("Consignee has been passed as Role")
   } else {
-    jsonResp = "{\"Error\":\"Incorrect Role has been passed, should be: Shipper, Owner, Insurer or Consignee\"}"
+    jsonResp = "Error:Incorrect Role has been passed, should be: Shipper, Provider, Insurer or Consignee"
     return nil, errors.New(jsonResp)
   }
 
@@ -909,13 +948,13 @@ func (t *SimpleChaincode) querybyrole_status(stub shim.ChaincodeStubInterface, a
     } else if args[2] == "Pkg_Delivered" {
     fmt.Println("Pkg_Delivered has been passed as status")
     } else {
-      jsonResp = "{\"Error\":\"Incorrect Status has been passed, should be: Label_Generated, In_Transit, Pkg_Damaged or Pkg_Delivered\"}"
+      jsonResp = "Error: Incorrect Status has been passed, should be: Label_Generated, In_Transit, Pkg_Damaged or Pkg_Delivered"
       return nil, errors.New(jsonResp)
     }
 
   valAsbytes, err := stub.GetState("PkgIdsKey")
   if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for PkgIdsKey \"}"
+      jsonResp = "Error:Failed to get state for PkgIdsKey "
       return nil, errors.New(jsonResp)
       }
 
@@ -923,7 +962,7 @@ func (t *SimpleChaincode) querybyrole_status(stub shim.ChaincodeStubInterface, a
   err = json.Unmarshal(valAsbytes, &package_holder)
   if err != nil {
             fmt.Println("Could not marshal personal info object", err)
-            jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+            jsonResp = "Error:Could not marshal personal info object"
             return nil, errors.New(jsonResp)
       }
 
@@ -937,27 +976,27 @@ func (t *SimpleChaincode) querybyrole_status(stub shim.ChaincodeStubInterface, a
 
     pkginfoasbytes, err := stub.GetState(PkgId)
     if err != nil {
-      jsonResp = "{\"Error\":\"Failed to get state for " + PkgId + "\"}"
+      jsonResp = "Error: Failed to get state for " + PkgId
       return nil, errors.New(jsonResp)
     }
 
     err = json.Unmarshal(pkginfoasbytes, &pkginfo);
     if err != nil {
               fmt.Println("Could not marshal personal info object", err)
-              jsonResp = "{\"Error\":\"Could not marshal personal info object\"}"
+              jsonResp = "Error:Could not marshal personal info object"
               return nil, errors.New(jsonResp)
     }
 
     // check for inout role & Status - this is crude way to do this - need to find another way
-    if args[0] == "Shipper"{
-      if pkginfo.Shipper == args[1] {
+    if args[0] == "Provider"{
+      if pkginfo.Provider == args[1] {
         if pkginfo.PkgStatus  == args[2] {
         temp = pkginfoasbytes
         result += string(temp) + ","
         }
       }
-    } else if args[0] == "Owner" {
-      if pkginfo.Owner == args[1] {
+    } else if args[0] == "Shipper" {
+      if pkginfo.Shipper == args[1] {
         if pkginfo.PkgStatus == args[2] {
         temp = pkginfoasbytes
         result += string(temp) + ","
